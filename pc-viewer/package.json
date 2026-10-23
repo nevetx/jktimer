@@ -1,0 +1,43 @@
+{
+  "name": "jktimer-pc-viewer",
+  "productName": "JK Timer Gen 2 Viewer",
+  "version": "1.0.0",
+  "description": "JK Timer Gen 2 PC 唯讀檢視器：自動在區網搜尋平板並顯示儀表板與語音播報",
+  "main": "src/main.js",
+  "private": true,
+  "author": "nevetx",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable --x64"
+  },
+  "devDependencies": {
+    "electron": "44.7.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "com.nevetx.jktimer.viewer",
+    "productName": "JK Timer Gen 2 Viewer",
+    "directories": {
+      "buildResources": "assets",
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.png"
+    },
+    "portable": {
+      "artifactName": "JKTimerViewer-${version}-portable.exe",
+      "unpackDirName": "JKTimerViewer"
+    }
+  }
+}

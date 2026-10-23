@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self'; style-src 'self'; script-src 'self'">
+<title>JK Timer Gen 2 Viewer</title>
+<link rel="stylesheet" href="launcher.css">
+</head>
+<body>
+<main class="panel">
+  <img class="logo" src="../assets/icon.png" alt="">
+  <h1 class="title">JK Timer Gen 2 Viewer</h1>
+  <div class="divider"></div>
+
+  <div class="status">
+    <span id="spinner" class="spinner" hidden></span>
+    <span id="message">正在區網中搜尋平板…</span>
+  </div>
+
+  <section id="deviceSection" hidden>
+    <h2>找到的平板</h2>
+    <ul id="deviceList" class="device-list"></ul>
+  </section>
+
+  <section class="manual">
+    <h2>手動輸入平板 IP</h2>
+    <p class="hint">自動搜尋找不到時使用；IP 顯示在平板畫面左上角的「PC 檢視」。</p>
+    <form id="manualForm" class="manual-form" autocomplete="off">
+      <input id="manualInput" type="text" placeholder="例如 192.168.1.50 或 192.168.1.50:8080">
+      <button type="submit" class="btn btn-primary">連線</button>
+    </form>
+    <div id="manualError" class="error" hidden></div>
+  </section>
+
+  <div class="actions">
+    <button id="rescanBtn" type="button" class="btn">重新搜尋</button>
+  </div>
+</main>
+<script src="launcher.js"></script>
+</body>
+</html>

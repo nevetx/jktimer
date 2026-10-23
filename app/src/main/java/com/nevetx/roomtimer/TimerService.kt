@@ -32,7 +32,7 @@ class TimerService : Service() {
         val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) Notification.Builder(this, CHANNEL) else Notification.Builder(this)
         val notification = builder
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-            .setContentTitle("Room 計時器運行中")
+            .setContentTitle("${RoomTimerApp.APP_NAME} 運行中")
             .setContentText("HTTP 埠 ${RoomTimerApp.HTTP_PORT}")
             .setContentIntent(pi)
             .setOngoing(true)

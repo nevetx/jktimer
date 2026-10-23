@@ -1,6 +1,7 @@
 package com.nevetx.roomtimer
 
 import android.content.Context
+import android.media.AudioAttributes
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -25,6 +26,8 @@ class TtsScheduler(
     companion object {
         const val AFTER_ROOM_MS = 3_000L
         const val GLOBAL_REPEAT_MS = 5_000L
+        /** TTS 相對音量（0~1）；與點擊聲（[ClickSound]）同走媒體音量，比例固定 */
+        const val TTS_VOLUME = 1.0f
         private const val WATCHDOG_MS = 20_000L
         private const val TAG = "TtsScheduler"
     }
@@ -35,6 +38,8 @@ class TtsScheduler(
     private var speakingId: String? = null
     private var globalDueAt: Long? = null
     private var seq = 0
+    /** 待播的一次性語音（例如歡迎語）；優先於房間報時 */
+    private var pendingAnnouncement: String? = null
 
     private val pumpRunnable = Runnable { pump() }
     private val watchdog = Runnable { speakingId?.let { finished(it) } }
@@ -48,6 +53,13 @@ class TtsScheduler(
             Log.e(TAG, "TTS init failed: $status")
             return
         }
+        // 明確指定走媒體音量通道（與點擊聲相同）
+        tts.setAudioAttributes(
+            AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                .build()
+        )
         val r = tts.setLanguage(Locale.US)
         if (r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED) {
             tts.setLanguage(Locale.ENGLISH)
@@ -78,11 +90,24 @@ class TtsScheduler(
 
     fun onStateChanged() = pump()
 
+    /**
+     * 播放一次性語音（例如歡迎語）。
+     * TTS 初始化為非同步，呼叫時引擎可能尚未就緒，因此先存入待播欄位，
+     * 由 [pump] 在引擎就緒且空閒時優先播出（[onInit] 完成後會呼叫 [pump]）。
+     */
+    fun speakImmediate(text: String) {
+        handler.post {
+            pendingAnnouncement = text
+            pump()
+        }
+    }
+
     private fun finished(id: String) {
         if (id != speakingId) return
         handler.removeCallbacks(watchdog)
         speakingId = null
-        val delay = if (id.startsWith("room")) AFTER_ROOM_MS else GLOBAL_REPEAT_MS
+        // Global TTS 讀完後間隔 GLOBAL_REPEAT_MS；Room TTS 或一次性語音讀完後間隔 AFTER_ROOM_MS
+        val delay = if (id.startsWith("global")) GLOBAL_REPEAT_MS else AFTER_ROOM_MS
         globalDueAt = SystemClock.elapsedRealtime() + delay
         pump()
     }
@@ -90,6 +115,12 @@ class TtsScheduler(
     private fun pump() {
         handler.removeCallbacks(pumpRunnable)
         if (!ready || speakingId != null) return
+
+        pendingAnnouncement?.let { text ->
+            pendingAnnouncement = null
+            speak(text, "announce-${seq++}")
+            return
+        }
 
         while (roomQueue.isNotEmpty() && !isExpired(roomQueue.first())) roomQueue.removeFirst()
         if (roomQueue.isNotEmpty()) {
@@ -116,7 +147,8 @@ class TtsScheduler(
         speakingId = id
         Log.i(TAG, "speak [$id]: $text")
         handler.postDelayed(watchdog, WATCHDOG_MS)
-        val result = tts.speak(text, TextToSpeech.QUEUE_FLUSH, Bundle(), id)
+        val params = Bundle().apply { putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, TTS_VOLUME) }
+        val result = tts.speak(text, TextToSpeech.QUEUE_FLUSH, params, id)
         if (result != TextToSpeech.SUCCESS) {
             Log.e(TAG, "speak failed for $id")
             handler.post { finished(id) }
